@@ -9,22 +9,31 @@ public class JsonPlaceholderClient {
     public static void main(String[] args) {
         try {
             int userId = 1;
-            String newUserJson = "{\"name\": \"John Doe\", \"username\": \"johndoe\"}";
-            String createdUserJson = sendPostRequest(BASE_URL + "/users", newUserJson);
-            System.out.println("Створено нового користувача: " + createdUserJson);
-
-            String latestPostCommentsJson = getLatestPostComments(userId);
-            System.out.println("Коментарі до останнього поста: " + latestPostCommentsJson);
-            String fileName = "user-" + userId + "-latest-post-comments.json";
-            writeJsonToFile(latestPostCommentsJson, fileName);
-            System.out.println("Коментарі записано у файл: " + fileName);
-
-            String openTasksJson = TaskManager.getOpenTasksForUser(userId);
-            System.out.println("Відкриті задачі для користувача: " + openTasksJson);
-
+            createNewUser();
+            getAndSaveLatestPostComments(userId);
+            displayOpenTasksForUser(userId);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private static void createNewUser() throws IOException {
+        String newUserJson = "{\"name\": \"John Doe\", \"username\": \"johndoe\"}";
+        String createdUserJson = sendPostRequest(BASE_URL + "/users", newUserJson);
+        System.out.println("Створено нового користувача: " + createdUserJson);
+    }
+
+    private static void getAndSaveLatestPostComments(int userId) throws IOException {
+        String latestPostCommentsJson = getLatestPostComments(userId);
+        System.out.println("Коментарі до останнього поста: " + latestPostCommentsJson);
+        String fileName = "user-" + userId + "-latest-post-comments.json";
+        writeJsonToFile(latestPostCommentsJson, fileName);
+        System.out.println("Коментарі записано у файл: " + fileName);
+    }
+
+    private static void displayOpenTasksForUser(int userId) throws IOException {
+        String openTasksJson = TaskManager.getOpenTasksForUser(userId);
+        System.out.println("Відкриті задачі для користувача: " + openTasksJson);
     }
 
     private static String sendPostRequest(String urlString, String postData) throws IOException {
@@ -34,21 +43,18 @@ public class JsonPlaceholderClient {
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setDoOutput(true);
 
-        OutputStream os = connection.getOutputStream();
-        os.write(postData.getBytes());
-        os.flush();
-        os.close();
-
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        String inputLine;
-        StringBuilder response = new StringBuilder();
-
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
+        try (OutputStream os = connection.getOutputStream()) {
+            os.write(postData.getBytes());
         }
-        in.close();
 
-        return response.toString();
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+            StringBuilder response = new StringBuilder();
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            return response.toString();
+        }
     }
 
     private static String getLatestPostComments(int userId) throws IOException {
@@ -62,22 +68,20 @@ public class JsonPlaceholderClient {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        String inputLine;
-        StringBuilder response = new StringBuilder();
-
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+            StringBuilder response = new StringBuilder();
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            return response.toString();
         }
-        in.close();
-
-        return response.toString();
     }
 
     private static void writeJsonToFile(String json, String fileName) throws IOException {
-        FileWriter fileWriter = new FileWriter(fileName);
-        fileWriter.write(json);
-        fileWriter.close();
+        try (FileWriter fileWriter = new FileWriter(fileName)) {
+            fileWriter.write(json);
+        }
     }
 
     private static int getLastPostId(String postsJson) {
@@ -98,16 +102,13 @@ class TaskManager {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setRequestMethod("GET");
 
-        BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        String inputLine;
-        StringBuilder response = new StringBuilder();
-
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+            StringBuilder response = new StringBuilder();
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            return response.toString();
         }
-        in.close();
-
-        return response.toString();
     }
 }
-
